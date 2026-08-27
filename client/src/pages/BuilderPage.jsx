@@ -5,17 +5,23 @@ import BuilderHeader from '../components/BuilderHeader'
 import Loading from '../components/Loading'
 import { FolderTreeIcon, MessageSquare, MessageSquareIcon } from 'lucide-react'
 import ChatPanel from '../components/ChatPanel'
+import FileExplorer from '../components/FileExplorer'
+import PreviewPanel from '../components/PreviewPanel'
+import AgentProgressDashboard from '../components/AgentProgressDashboard'
+import PublishModel from '../components/PublishModel'
+import api from '../api/api'
+import toast from 'react-hot-toast'
+import { exportProjectZip } from '../utils/exportProject'
 
 const BuilderPage = () => {
 
    const {id} = useParams()
-   const {navigate} = useNavigate()
+  const navigate = useNavigate()
    const [leftTab , setLeftTab] = useState("chat");
    const [publishing , setPublishing] = useState(false);
    const [publishUrl , setPublishUrl] = useState(null);
-   const {activeProject , loadingActiveProject , activeFile, showCode , setActiveFile , setShowCode , loadProject ,logout} = useAppContext()
-  const [chatLoading , setChatLoading] = useState("false")
-  const handleChat = () => {}
+   const {activeProject , loadingActiveProject , activeFile, showCode , setActiveFile , setShowCode , loadProject ,logout, chatLoading, handleChat} = useAppContext()
+ 
 
   useEffect(()=>{
     if(!id) return;
@@ -37,13 +43,28 @@ const BuilderPage = () => {
 
 const handleOpenPreview = () => {
   if(!id) return;
-  window.open(`/preview/${id} , "_blank"`)
+  navigate(`/preview/${id}`)
 } 
 
 const handlePublish = async () => {
+  if(!id) return;
+  setPublishing(true)
+  try{
+    await api.post(`/api/projects/${id}/publish`);
+    const url = `${window.location.origin}/publish/${id}`;
+    setPublishUrl(url);
+    toast.success("Website published successfully!")
+  } catch (error){
+   console.error("Publish failed:" , err);
+   toast.error(err?.response?.data?.error || "Publish Failed");
+  } finally {
+    setPublishing(false)
+  }
   
 }
 const handleDownload = () => {
+  if(!activeProject) return;
+  exportProjectZip(activeProject)
   
 }
 
@@ -88,15 +109,28 @@ if(loadingActiveProject || !activeProject){
             leftTab === "chat"?(
               <ChatPanel messages={activeProject.messages} onSend={handleChat} loading={chatLoading} />
             ):(
-              <div> File Explorer </div>
+              <FileExplorer
+                files={activeProject.files}
+                activeFile={activeFile}
+                onFileSelect={(path)=>{
+                  setActiveFile(path);
+                  setShowCode(true);
+                }}
+              />
             )
           }
 
          </div>
       </div>
+      
 
+      <div className='flex-1 overflow-hidden'>
+        {activeProject.status === "pending" || activeProject.status === "generating" || activeProject.status === "failed"? (
+          <AgentProgressDashboard project={activeProject} /> ) :( <PreviewPanel project={activeProject} activeFile ={activeFile} showCode ={showCode}/>
+        )}
+      </div>
     </div>
-
+ {publishUrl && <PublishModel publishUrl={publishUrl} onClose={()=> setPublishUrl(null)}/>}
     </div>
   )
 }

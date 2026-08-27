@@ -1,11 +1,12 @@
 import React from 'react'
-import {Routes ,  Route } from 'react-router-dom'
+import {Routes ,  Route, Navigate } from 'react-router-dom'
 import {GuestLayout, AuthLayout} from './pages/Layout'
 import AuthPage from './pages/AuthPage'
 import HomePage from './pages/HomePage'
 import BuilderPage from './pages/BuilderPage'
 import PreviewPage from './pages/PreviewPage'
 import { Toaster } from 'react-hot-toast'
+import PublishPage from './pages/PublishPage'
 
 const App = () => {
   return (
@@ -17,6 +18,9 @@ const App = () => {
       <Route path='/login' element={<AuthPage mode="login"/>} />
       <Route path='/register' element={<AuthPage mode="register"/>} />
     </Route>
+
+     
+    <Route path='/publish/:id' element={<PublishPage />} />
      {/* protected Routes */}
     <Route element={<AuthLayout/>}>
       <Route path='/' element={<HomePage/>} />
